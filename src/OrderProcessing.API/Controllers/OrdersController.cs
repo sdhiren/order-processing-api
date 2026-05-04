@@ -51,14 +51,36 @@ public sealed class OrdersController : ControllerBase
         return Ok(order);
     }
 
-    /// <summary>Lists all orders, optionally filtered by status.</summary>
+    /// <summary>
+    /// Lists all orders, optionally filtered by status.
+    /// Valid status values: Pending, Processing, Shipped, Delivered, Cancelled (case-insensitive).
+    /// </summary>
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<OrderResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetAllOrders(
-        [FromQuery] OrderStatus? status,
+        [FromQuery] string? status,
         CancellationToken cancellationToken)
     {
-        var orders = await _orderService.GetAllOrdersAsync(status, cancellationToken);
+        OrderStatus? parsedStatus = null;
+        if (status is not null)
+        {
+            var matchedName = Enum.GetNames<OrderStatus>()
+                .FirstOrDefault(n => n.Equals(status, StringComparison.OrdinalIgnoreCase));
+
+            if (matchedName is null)
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Invalid status value",
+                    Detail = $"'{status}' is not a valid order status. Valid values are: {string.Join(", ", Enum.GetNames<OrderStatus>())}",
+                    Status = StatusCodes.Status400BadRequest
+                });
+            }
+            parsedStatus = Enum.Parse<OrderStatus>(matchedName);
+        }
+
+        var orders = await _orderService.GetAllOrdersAsync(parsedStatus, cancellationToken);
         return Ok(orders);
     }
 

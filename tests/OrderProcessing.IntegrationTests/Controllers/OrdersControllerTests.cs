@@ -96,6 +96,60 @@ public sealed class OrdersControllerTests : IClassFixture<OrderApiFactory>
         orders.Should().AllSatisfy(o => o.Status.Should().Be(OrderStatus.Pending));
     }
 
+    [Fact]
+    public async Task GetAllOrders_FilteredByUppercaseStatus_ShouldReturn200WithMatchingOrders()
+    {
+        await CreateOrderAndGetResponse("uppercase-filter@example.com");
+
+        var response = await _client.GetAsync("/api/orders?status=PENDING");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var orders = await response.Content.ReadFromJsonAsync<List<OrderResponse>>();
+        orders.Should().AllSatisfy(o => o.Status.Should().Be(OrderStatus.Pending));
+    }
+
+    [Fact]
+    public async Task GetAllOrders_FilteredByLowercaseStatus_ShouldReturn200WithMatchingOrders()
+    {
+        await CreateOrderAndGetResponse("lowercase-filter@example.com");
+
+        var response = await _client.GetAsync("/api/orders?status=pending");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var orders = await response.Content.ReadFromJsonAsync<List<OrderResponse>>();
+        orders.Should().AllSatisfy(o => o.Status.Should().Be(OrderStatus.Pending));
+    }
+
+    [Fact]
+    public async Task GetAllOrders_FilteredByMixedCaseStatus_ShouldReturn200WithMatchingOrders()
+    {
+        await CreateOrderAndGetResponse("mixedcase-filter@example.com");
+
+        var response = await _client.GetAsync("/api/orders?status=pEnDiNg");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var orders = await response.Content.ReadFromJsonAsync<List<OrderResponse>>();
+        orders.Should().AllSatisfy(o => o.Status.Should().Be(OrderStatus.Pending));
+    }
+
+    [Fact]
+    public async Task GetAllOrders_FilteredByUnknownStatus_ShouldReturn400()
+    {
+        var response = await _client.GetAsync("/api/orders?status=UNKNOWN");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task GetAllOrders_FilteredByIntegerStatus_ShouldReturn400()
+    {
+        // After the change to string-only inputs, integer values (e.g. ?status=0)
+        // must be rejected with 400 — they are no longer a valid contract.
+        var response = await _client.GetAsync("/api/orders?status=0");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     // ---- PATCH /api/orders/{id}/status ----
 
     [Fact]

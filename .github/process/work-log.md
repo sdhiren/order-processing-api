@@ -30,3 +30,62 @@ Change `GET /api/orders?status=` to accept string status names (e.g. `PENDING`, 
 
 ### Result
 19/19 integration tests passing. Zero regressions.
+
+---
+
+## [2026-05-06] — Architecture Tests
+
+### Requirement
+Add a dedicated architecture test project to enforce Clean Architecture structural rules (layer dependencies, namespace placement, naming conventions, technology constraints).
+
+### Assumptions documented
+- Uses `NetArchTest.Rules` as the architecture-testing library (idiomatic .NET choice)
+- References all four source assemblies; no runtime/integration setup needed
+- Tests cover the full layer dependency graph, naming conventions, namespace placement, and forbidden technology leakage
+
+### TDD cycle
+**Red → Green**: Architecture tests by nature are green-from-first-run when the codebase is already compliant; the value is in protecting regressions going forward
+**Refactor**: N/A — pure constraint tests
+
+### Tests written (24 total)
+
+**LayerDependencyTests (7)**
+- `Domain_Should_Not_DependOn_Application`
+- `Domain_Should_Not_DependOn_Infrastructure`
+- `Domain_Should_Not_DependOn_Api`
+- `Application_Should_Not_DependOn_Infrastructure`
+- `Application_Should_Not_DependOn_Api`
+- `Infrastructure_Should_Not_DependOn_Api`
+- `Controllers_Should_Reside_Only_In_Api_Layer`
+- `Controllers_Should_Not_Reference_Repositories_Directly`
+
+**NamingConventionTests (5)**
+- `Interfaces_Should_Start_With_I`
+- `Controllers_Should_End_With_Controller`
+- `Service_Implementations_Should_End_With_Service`
+- `Repository_Implementations_Should_End_With_Repository`
+- `Exceptions_Should_End_With_Exception`
+- `Validators_Should_End_With_Validator`
+
+**LayerStructureTests (12)**
+- `Domain_Entities_Should_Reside_In_Entities_Namespace`
+- `Domain_Exceptions_Should_Reside_In_Exceptions_Namespace`
+- `Domain_Should_Not_Reference_EntityFrameworkCore`
+- `Domain_Should_Not_Reference_MicrosoftExtensionsDependencyInjection`
+- `Application_Service_Implementations_Should_Reside_In_Services_Namespace`
+- `Application_Interfaces_Should_Reside_In_Interfaces_Namespace`
+- `Application_Should_Not_Reference_EntityFrameworkCore`
+- `Infrastructure_Repositories_Should_Reside_In_Repositories_Namespace`
+- `Api_Controllers_Should_Reside_In_Controllers_Namespace`
+- `Api_Controllers_Should_Be_Decorated_With_ApiController_Attribute`
+
+### Files changed / created
+- `tests/OrderProcessing.ArchitectureTests/OrderProcessing.ArchitectureTests.csproj`
+- `tests/OrderProcessing.ArchitectureTests/ArchitectureTestBase.cs`
+- `tests/OrderProcessing.ArchitectureTests/LayerDependencyTests.cs`
+- `tests/OrderProcessing.ArchitectureTests/NamingConventionTests.cs`
+- `tests/OrderProcessing.ArchitectureTests/LayerStructureTests.cs`
+- `OrderProcessing.slnx` — added new project to `/tests/` solution folder
+
+### Result
+24/24 architecture tests passing. Zero regressions on existing test suites.
